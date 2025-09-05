@@ -1,0 +1,133 @@
+<div class="upload-container">
+  <h2>Upload Dataset</h2>
+  <p>Upload your Kaggle Production Line CSV dataset to begin the quality control analysis.</p>
+
+  <!-- Upload Area -->
+  <div class="upload-area"
+       [class.drag-over]="isDragOver"
+       (dragover)="onDragOver($event)"
+       (dragleave)="onDragLeave($event)"
+       (drop)="onDrop($event)"
+       *ngIf="!dataset">
+    
+    <mat-icon class="upload-icon">cloud_upload</mat-icon>
+    <h3>Choose File or Drag & Drop</h3>
+    <p>Click to select a CSV file or drag it here</p>
+    
+    <input type="file" 
+           #fileInput 
+           (change)="onFileSelected($event)" 
+           accept=".csv"
+           style="display: none;">
+    
+    <button mat-raised-button 
+            color="primary" 
+            (click)="fileInput.click()"
+            [disabled]="isUploading">
+      <mat-icon>folder_open</mat-icon>
+      Choose File
+    </button>
+    
+    <div class="file-requirements">
+      <h4>Requirements:</h4>
+      <ul>
+        <li>CSV format</li>
+        <li>Must include 'Response' column (binary classification)</li>
+        <li>Maximum file size: 100MB</li>
+        <li>Synthetic timestamps will be added if not present</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Upload Progress -->
+  <div *ngIf="isUploading" class="upload-progress">
+    <h3>Uploading Dataset...</h3>
+    <mat-progress-bar mode="determinate" [value]="uploadProgress"></mat-progress-bar>
+    <p>{{uploadProgress}}% complete</p>
+  </div>
+
+  <!-- Dataset Info Card -->
+  <mat-card *ngIf="dataset && !isUploading" class="file-info-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>description</mat-icon>
+        Dataset Information
+      </mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <div class="dataset-info-grid">
+        <div class="info-item">
+          <mat-icon>insert_drive_file</mat-icon>
+          <div>
+            <strong>File Name</strong>
+            <p>{{dataset.filename}}</p>
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <mat-icon>table_chart</mat-icon>
+          <div>
+            <strong>Total Records</strong>
+            <p>{{formatNumber(dataset.totalRecords)}}</p>
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <mat-icon>view_column</mat-icon>
+          <div>
+            <strong>Total Columns</strong>
+            <p>{{formatNumber(dataset.totalColumns)}}</p>
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <mat-icon>trending_up</mat-icon>
+          <div>
+            <strong>Pass Rate</strong>
+            <p>{{dataset.passRate.toFixed(1)}}%</p>
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <mat-icon>schedule</mat-icon>
+          <div>
+            <strong>Date Range</strong>
+            <p>{{dataset.dateRange.earliest | date:'short'}} - {{dataset.dateRange.latest | date:'short'}}</p>
+          </div>
+        </div>
+        
+        <div class="info-item">
+          <mat-icon>check_circle</mat-icon>
+          <div>
+            <strong>Response Column</strong>
+            <p>
+              <span class="status-indicator" [class]="dataset.hasResponseColumn ? 'success' : 'error'">
+                <mat-icon>{{dataset.hasResponseColumn ? 'check_circle' : 'error'}}</mat-icon>
+                {{dataset.hasResponseColumn ? 'Found' : 'Missing'}}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dataset-actions">
+        <button mat-button color="warn" (click)="dataset = null">
+          <mat-icon>delete</mat-icon>
+          Remove Dataset
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Next Button -->
+  <div class="next-button-container" *ngIf="dataset">
+    <button mat-raised-button 
+            color="primary" 
+            [disabled]="!dataset"
+            matStepperNext>
+      Next: Define Date Ranges
+      <mat-icon>arrow_forward</mat-icon>
+    </button>
+  </div>
+</div>

@@ -1,0 +1,190 @@
+<div class="training-container">
+  <h2>Model Training</h2>
+  <p>Configure and train a machine learning model for quality prediction using your dataset.</p>
+
+  <!-- Training Configuration -->
+  <form [formGroup]="trainingForm" *ngIf="!isTraining">
+    <mat-card class="config-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>settings</mat-icon>
+          Training Configuration
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="config-grid">
+          <!-- Algorithm Selection -->
+          <mat-form-field appearance="outline">
+            <mat-label>ML Algorithm</mat-label>
+            <mat-select formControlName="algorithm" (selectionChange)="onAlgorithmChange($event.value)">
+              <mat-option *ngFor="let algorithm of algorithms" [value]="algorithm">
+                {{getAlgorithmDisplayName(algorithm)}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Validation Split -->
+          <mat-form-field appearance="outline">
+            <mat-label>Validation Split</mat-label>
+            <input matInput type="number" formControlName="validationSplit" 
+                   min="0.1" max="0.5" step="0.05">
+            <mat-hint>Percentage of training data used for validation (0.1 - 0.5)</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <!-- Hyperparameters -->
+        <div formGroupName="hyperparameters" class="hyperparams-section">
+          <h3>Hyperparameters</h3>
+          <div class="hyperparams-grid">
+            <mat-form-field *ngFor="let control of getHyperparameterControls() | keyvalue" 
+                           appearance="outline">
+              <mat-label>{{control.key}}</mat-label>
+              <input matInput [formControlName]="control.key" 
+                     [type]="getInputType(control.value)">
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="training-actions">
+          <button mat-raised-button 
+                  color="primary" 
+                  (click)="startTraining()"
+                  [disabled]="!trainingForm.valid">
+            <mat-icon>play_arrow</mat-icon>
+            Start Training
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </form>
+
+  <!-- Training Status -->
+  <mat-card *ngIf="trainingStatus" class="status-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon [style.color]="getStatusColor(trainingStatus?.status || '')">
+          {{getStatusIcon(trainingStatus?.status || '')}}
+        </mat-icon>
+        Training Status: {{getStatusDisplayName(trainingStatus?.status || '')}}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <!-- Progress Information -->
+      <div class="progress-section" *ngIf="trainingStatus?.status === 'training'">
+        <mat-progress-bar mode="determinate" [value]="trainingStatus?.progress"></mat-progress-bar>
+        <p>{{trainingStatus?.progress?.toFixed(1)}}% complete</p>
+        
+        <div class="training-details" *ngIf="trainingStatus?.currentEpoch && trainingStatus?.totalEpochs">
+          <p><strong>Epoch:</strong> {{trainingStatus?.currentEpoch}} / {{trainingStatus?.totalEpochs}}</p>
+          <p><strong>Duration:</strong> {{formatDuration(trainingStatus?.startedAt || '')}}</p>
+        </div>
+      </div>
+
+      <!-- Completion Information -->
+      <div class="completion-section" *ngIf="trainingStatus?.status === 'completed'">
+        <div class="completion-details">
+          <p><strong>Duration:</strong> {{formatDuration(trainingStatus?.startedAt || '', trainingStatus?.completedAt)}}</p>
+          <p><strong>Completed:</strong> {{trainingStatus?.completedAt | date:'medium'}}</p>
+        </div>
+      </div>
+
+      <!-- Error Information -->
+      <div class="error-section" *ngIf="trainingStatus?.status === 'failed'">
+        <mat-card class="error-card">
+          <mat-card-content>
+            <p><strong>Error:</strong> {{trainingStatus?.error}}</p>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Model Metrics -->
+  <mat-card *ngIf="trainingStatus?.metrics" class="metrics-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>analytics</mat-icon>
+        Model Performance Metrics
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <mat-icon>accuracy</mat-icon>
+          <div>
+            <strong>Accuracy</strong>
+            <p>{{formatMetric(trainingStatus?.metrics?.accuracy || 0)}}</p>
+          </div>
+        </div>
+        
+        <div class="metric-item">
+          <mat-icon>precision_manufacturing</mat-icon>
+          <div>
+            <strong>Precision</strong>
+            <p>{{formatMetric(trainingStatus?.metrics?.precision || 0)}}</p>
+          </div>
+        </div>
+        
+        <div class="metric-item">
+          <mat-icon>replay</mat-icon>
+          <div>
+            <strong>Recall</strong>
+            <p>{{formatMetric(trainingStatus?.metrics?.recall || 0)}}</p>
+          </div>
+        </div>
+        
+        <div class="metric-item">
+          <mat-icon>functions</mat-icon>
+          <div>
+            <strong>F1-Score</strong>
+            <p>{{formatMetric(trainingStatus?.metrics?.f1Score || 0)}}</p>
+          </div>
+        </div>
+        
+        <div class="metric-item">
+          <mat-icon>show_chart</mat-icon>
+          <div>
+            <strong>AUC</strong>
+            <p>{{formatMetric(trainingStatus?.metrics?.auc || 0)}}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confusion Matrix -->
+      <div class="confusion-matrix" *ngIf="trainingStatus?.metrics?.confusionMatrix">
+        <h4>Confusion Matrix</h4>
+        <table class="confusion-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Predicted 0</th>
+              <th>Predicted 1</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Actual 0</strong></td>
+              <td>{{trainingStatus?.metrics?.confusionMatrix?.[0]?.[0]}}</td>
+              <td>{{trainingStatus?.metrics?.confusionMatrix?.[0]?.[1]}}</td>
+            </tr>
+            <tr>
+              <td><strong>Actual 1</strong></td>
+              <td>{{trainingStatus?.metrics?.confusionMatrix?.[1]?.[0]}}</td>
+              <td>{{trainingStatus?.metrics?.confusionMatrix?.[1]?.[1]}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Next Button -->
+  <div class="next-button-container" *ngIf="isTrainingComplete()">
+    <button mat-raised-button 
+            color="primary" 
+            matStepperNext>
+      Next: Start Simulation
+      <mat-icon>arrow_forward</mat-icon>
+    </button>
+  </div>
+</div>

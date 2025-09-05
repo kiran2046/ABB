@@ -1,0 +1,242 @@
+<div class="simulation-container">
+  <h2>Real-Time Quality Simulation</h2>
+  <p>Run real-time quality prediction simulation using your trained model.</p>
+
+  <!-- Simulation Controls -->
+  <mat-card class="controls-card" *ngIf="!isRunning">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>play_circle_outline</mat-icon>
+        Simulation Configuration
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="simulationForm">
+        <div class="config-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Simulation Speed</mat-label>
+            <mat-select formControlName="realTimeSpeed">
+              <mat-option *ngFor="let option of speedOptions" [value]="option.value">
+                {{option.label}}
+              </mat-option>
+            </mat-select>
+            <mat-hint>Speed multiplier for simulation playback</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="start-actions">
+          <button mat-raised-button 
+                  color="primary" 
+                  (click)="startSimulation()"
+                  [disabled]="!simulationForm.valid">
+            <mat-icon>play_arrow</mat-icon>
+            Start Simulation
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Simulation Status -->
+  <mat-card *ngIf="simulationStatus" class="status-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon [style.color]="getStatusColor(simulationStatus.status)">
+          {{getStatusIcon(simulationStatus.status)}}
+        </mat-icon>
+        {{getStatusDisplayName(simulationStatus.status)}}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="status-info">
+        <div class="status-metrics">
+          <div class="metric">
+            <mat-icon>schedule</mat-icon>
+            <div>
+              <strong>Current Time</strong>
+              <p>{{simulationStatus.currentTimestamp | date:'medium'}}</p>
+            </div>
+          </div>
+          
+          <div class="metric">
+            <mat-icon>timeline</mat-icon>
+            <div>
+              <strong>Progress</strong>
+              <p>{{simulationStatus.progress.toFixed(1)}}%</p>
+            </div>
+          </div>
+          
+          <div class="metric">
+            <mat-icon>analytics</mat-icon>
+            <div>
+              <strong>Predictions</strong>
+              <p>{{formatNumber(simulationStatus.predictionsCount)}}</p>
+            </div>
+          </div>
+          
+          <div class="metric">
+            <mat-icon>warning</mat-icon>
+            <div>
+              <strong>Alerts</strong>
+              <p>{{formatNumber(simulationStatus.alertsCount)}}</p>
+            </div>
+          </div>
+          
+          <div class="metric">
+            <mat-icon>verified</mat-icon>
+            <div>
+              <strong>Quality Score</strong>
+              <p [style.color]="getQualityScoreColor(simulationStatus.qualityScore)">
+                {{simulationStatus.qualityScore.toFixed(1)}}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <mat-progress-bar 
+          mode="determinate" 
+          [value]="simulationStatus.progress"
+          class="progress-bar">
+        </mat-progress-bar>
+      </div>
+
+      <!-- Control Buttons -->
+      <div class="control-buttons" *ngIf="isRunning || isPaused">
+        <button mat-raised-button 
+                color="accent" 
+                (click)="pauseSimulation()"
+                *ngIf="isRunning">
+          <mat-icon>pause</mat-icon>
+          Pause
+        </button>
+        
+        <button mat-raised-button 
+                color="primary" 
+                (click)="resumeSimulation()"
+                *ngIf="isPaused">
+          <mat-icon>play_arrow</mat-icon>
+          Resume
+        </button>
+        
+        <button mat-stroked-button 
+                color="warn" 
+                (click)="stopSimulation()">
+          <mat-icon>stop</mat-icon>
+          Stop
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-grid" *ngIf="isRunning || isPaused">
+    
+    <!-- Live Predictions Chart -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>show_chart</mat-icon>
+          Live Predictions
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <!-- Chart placeholder - would integrate with Chart.js or similar -->
+          <div class="chart-placeholder">
+            <mat-icon>timeline</mat-icon>
+            <p>Real-time prediction chart</p>
+            <p class="chart-hint">Shows quality predictions over time</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Recent Predictions -->
+    <mat-card class="predictions-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>list</mat-icon>
+          Recent Predictions
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="predictions-list">
+          <div *ngFor="let prediction of predictions.slice(-10)" 
+               class="prediction-item"
+               [class.alert]="prediction.isAlert">
+            <div class="prediction-time">
+              {{prediction.timestamp | date:'HH:mm:ss'}}
+            </div>
+            <div class="prediction-value">
+              {{prediction.prediction === 1 ? 'PASS' : 'FAIL'}}
+            </div>
+            <div class="prediction-confidence">
+              {{formatConfidence(prediction.confidence)}}
+            </div>
+            <mat-icon *ngIf="prediction.isAlert" class="alert-icon">warning</mat-icon>
+          </div>
+          <div *ngIf="predictions.length === 0" class="no-data">
+            No predictions yet
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Quality Alerts -->
+  <mat-card *ngIf="alerts.length > 0" class="alerts-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>notifications_active</mat-icon>
+        Quality Alerts
+        <mat-chip class="alert-count">{{alerts.length}}</mat-chip>
+      </mat-card-title>
+      <mat-card-actions>
+        <button mat-button (click)="clearAlerts()">
+          <mat-icon>clear_all</mat-icon>
+          Clear All
+        </button>
+      </mat-card-actions>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="alerts-list">
+        <div *ngFor="let alert of alerts" 
+             class="alert-item"
+             [class]="alert.severity">
+          <mat-icon [style.color]="getSeverityColor(alert.severity)">
+            {{getSeverityIcon(alert.severity)}}
+          </mat-icon>
+          <div class="alert-content">
+            <div class="alert-message">{{alert.message}}</div>
+            <div class="alert-details">
+              <span>{{alert.timestamp | date:'medium'}}</span>
+              <span>Confidence: {{formatConfidence(alert.confidence)}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Sensor Values (if available) -->
+  <mat-card *ngIf="predictions.length > 0" class="sensor-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>sensors</mat-icon>
+        Current Sensor Values
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="sensor-grid" *ngIf="predictions[predictions.length - 1]?.sensorValues">
+        <div *ngFor="let sensor of predictions[predictions.length - 1].sensorValues | keyvalue" 
+             class="sensor-item">
+          <strong>{{sensor.key}}</strong>
+          <p>{{sensor.value | number:'1.2-2'}}</p>
+        </div>
+      </div>
+      <div *ngIf="!predictions[predictions.length - 1]?.sensorValues" class="no-data">
+        No sensor data available
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

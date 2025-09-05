@@ -1,0 +1,32 @@
+<div class="abb-header">
+  <mat-toolbar>
+    <mat-icon>analytics</mat-icon>
+    <span style="margin-left: 10px;">{{title}}</span>
+  </mat-toolbar>
+</div>
+
+<div class="stepper-container">
+  <mat-stepper [linear]="isLinear" #stepper (selectionChange)="onStepChange($event)">
+    
+    <!-- Step 1: Upload Dataset -->
+    <mat-step label="Upload Dataset" [completed]="canProceedToNext(0)">
+      <app-upload-dataset></app-upload-dataset>
+    </mat-step>
+
+    <!-- Step 2: Date Ranges -->
+    <mat-step label="Date Ranges" [completed]="canProceedToNext(1)">
+      <app-date-ranges></app-date-ranges>
+    </mat-step>
+
+    <!-- Step 3: Model Training -->
+    <mat-step label="Model Training" [completed]="canProceedToNext(2)">
+      <app-model-training></app-model-training>
+    </mat-step>
+
+    <!-- Step 4: Simulation -->
+    <mat-step label="Simulation">
+      <app-simulation></app-simulation>
+    </mat-step>
+
+  </mat-stepper>
+</div>

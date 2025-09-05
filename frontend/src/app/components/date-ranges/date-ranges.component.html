@@ -1,0 +1,176 @@
+<div class="date-ranges-container">
+  <h2>Define Date Ranges</h2>
+  <p>Set up time-based splits for training, testing, and simulation periods. Date ranges must be sequential and non-overlapping.</p>
+
+  <form [formGroup]="dateForm" *ngIf="dataset">
+    <div class="date-range-cards">
+      
+      <!-- Training Period -->
+      <mat-card class="date-range-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon style="color: #4caf50;">school</mat-icon>
+            Training Period
+          </mat-card-title>
+          <mat-card-subtitle>Data used to train the ML model</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="date-inputs">
+            <mat-form-field appearance="outline">
+              <mat-label>Start Date</mat-label>
+              <input matInput [matDatepicker]="trainingStartPicker" 
+                     formControlName="trainingStart" readonly>
+              <mat-datepicker-toggle matSuffix [for]="trainingStartPicker"></mat-datepicker-toggle>
+              <mat-datepicker #trainingStartPicker></mat-datepicker>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>End Date</mat-label>
+              <input matInput [matDatepicker]="trainingEndPicker" 
+                     formControlName="trainingEnd" readonly>
+              <mat-datepicker-toggle matSuffix [for]="trainingEndPicker"></mat-datepicker-toggle>
+              <mat-datepicker #trainingEndPicker></mat-datepicker>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Testing Period -->
+      <mat-card class="date-range-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon style="color: #ff9800;">assessment</mat-icon>
+            Testing Period
+          </mat-card-title>
+          <mat-card-subtitle>Data used to evaluate model performance</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="date-inputs">
+            <mat-form-field appearance="outline">
+              <mat-label>Start Date</mat-label>
+              <input matInput [matDatepicker]="testingStartPicker" 
+                     formControlName="testingStart" readonly>
+              <mat-datepicker-toggle matSuffix [for]="testingStartPicker"></mat-datepicker-toggle>
+              <mat-datepicker #testingStartPicker></mat-datepicker>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>End Date</mat-label>
+              <input matInput [matDatepicker]="testingEndPicker" 
+                     formControlName="testingEnd" readonly>
+              <mat-datepicker-toggle matSuffix [for]="testingEndPicker"></mat-datepicker-toggle>
+              <mat-datepicker #testingEndPicker></mat-datepicker>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Simulation Period -->
+      <mat-card class="date-range-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon style="color: #2196f3;">play_circle_filled</mat-icon>
+            Simulation Period
+          </mat-card-title>
+          <mat-card-subtitle>Data used for real-time simulation</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="date-inputs">
+            <mat-form-field appearance="outline">
+              <mat-label>Start Date</mat-label>
+              <input matInput [matDatepicker]="simulationStartPicker" 
+                     formControlName="simulationStart" readonly>
+              <mat-datepicker-toggle matSuffix [for]="simulationStartPicker"></mat-datepicker-toggle>
+              <mat-datepicker #simulationStartPicker></mat-datepicker>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>End Date</mat-label>
+              <input matInput [matDatepicker]="simulationEndPicker" 
+                     formControlName="simulationEnd" readonly>
+              <mat-datepicker-toggle matSuffix [for]="simulationEndPicker"></mat-datepicker-toggle>
+              <mat-datepicker #simulationEndPicker></mat-datepicker>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Validation Button -->
+    <div class="validation-section">
+      <button mat-raised-button 
+              color="accent" 
+              (click)="validateDateRanges()"
+              [disabled]="!dateForm.valid || isValidating">
+        <mat-icon *ngIf="!isValidating">check_circle</mat-icon>
+        <mat-spinner *ngIf="isValidating" diameter="20"></mat-spinner>
+        {{isValidating ? 'Validating...' : 'Validate Date Ranges'}}
+      </button>
+    </div>
+  </form>
+
+  <!-- Timeline Visualization -->
+  <div class="timeline-container" *ngIf="validation?.isValid">
+    <h3>Date Range Timeline</h3>
+    <div class="timeline-bar">
+      <div *ngFor="let bar of getTimelineBars()" 
+           class="timeline-segment"
+           [style.background-color]="bar.color"
+           [style.width.%]="bar.width">
+        {{bar.label}}
+      </div>
+    </div>
+  </div>
+
+  <!-- Validation Results -->
+  <div class="validation-results" *ngIf="validation">
+    <mat-card *ngIf="validation.isValid" class="success-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon style="color: #4caf50;">check_circle</mat-icon>
+          Validation Successful
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <strong>Training Period</strong>
+            <p>{{formatDuration(validation.summary.trainingDays)}} ({{formatNumber(validation.summary.totalRecordsTraining)}} records)</p>
+          </div>
+          <div class="summary-item">
+            <strong>Testing Period</strong>
+            <p>{{formatDuration(validation.summary.testingDays)}} ({{formatNumber(validation.summary.totalRecordsTesting)}} records)</p>
+          </div>
+          <div class="summary-item">
+            <strong>Simulation Period</strong>
+            <p>{{formatDuration(validation.summary.simulationDays)}} ({{formatNumber(validation.summary.totalRecordsSimulation)}} records)</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card *ngIf="!validation.isValid" class="error-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon style="color: #f44336;">error</mat-icon>
+          Validation Failed
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <ul>
+          <li *ngFor="let error of validation.errors">{{error}}</li>
+        </ul>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Next Button -->
+  <div class="next-button-container" *ngIf="validation?.isValid">
+    <button mat-raised-button 
+            color="primary" 
+            matStepperNext>
+      Next: Train Model
+      <mat-icon>arrow_forward</mat-icon>
+    </button>
+  </div>
+</div>
