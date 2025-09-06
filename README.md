@@ -32,7 +32,7 @@ ABB/
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/kiran2046/ABB.git
+git clone https://github.com/kiran2046/ABB
 cd ABB
 ```
 
